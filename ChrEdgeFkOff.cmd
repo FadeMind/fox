@@ -5,7 +5,7 @@
 ::# v4 innovative redirect even if Edge is uninstalled! v3 powershell-less active part; parse "install" or "remove" args
 ::# if Edge is already removed, try installing Edge Stable, then remove it via Edge_Removal.bat
 
-@echo off & title ChrEdgeFkOff || AveYo 2022.08.20
+@echo off & title ChrEdgeFkOff || AveYo 2022.08.21
 
 ::# elevate with native shell by AveYo
 >nul reg add hkcu\software\classes\.Admin\shell\runas\command /f /ve /d "cmd /x /d /r set \"f0=%%2\"& call \"%%2\" %%3"& set _= %*
@@ -41,7 +41,7 @@ reg add "%IFEO%\msedge.exe" /f /v UseFilter /d 1 /t reg_dword >nul
 reg add "%IFEO%\msedge.exe\0" /f /v FilterFullPath /d "%MSE%" >nul
 reg add "%IFEO%\msedge.exe\0" /f /v Debugger /d "%Headless_Console_by_AveYo% \"%ProgramData%\ChrEdgeFkOff.cmd\"" >nul
 if "%CLI%" neq "" exit /b
-echo;& %<%:f0 " ChrEdgeFkOff V7 "%>>% & %<%:2f " INSTALLED "%>>% & %<%:f0 " run again to remove "%>%
+echo;& %<%:f0 " ChrEdgeFkOff V7+ "%>>% & %<%:2f " INSTALLED "%>>% & %<%:f0 " run again to remove "%>%
 timeout /t 7
 exit /b
 
@@ -55,7 +55,7 @@ reg add HKCR\MSEdgeHTM\shell\open\command /f /ve /d "\"%MSE%\" --single-argument
 reg delete "%IFEO%\ie_to_edge_stub.exe" /f >nul 2>nul
 reg delete "%IFEO%\msedge.exe" /f >nul 2>nul
 if "%CLI%" neq "" exit /b
-echo;& %<%:f0 " ChrEdgeFkOff V7 "%>>% & %<%:df " REMOVED "%>>% & %<%:f0 " run again to install "%>%
+echo;& %<%:f0 " ChrEdgeFkOff V7+ "%>>% & %<%:df " REMOVED "%>>% & %<%:f0 " run again to install "%>%
 timeout /t 7
 exit /b
 
@@ -65,7 +65,7 @@ set [=&for /f "delims=:" %%s in ('findstr /nbrc:":%~1:\[" /c:":%~1:\]" "%~f0"')d
 <"%~f0" ((for /l %%i in (0 1 %[%) do set /p =)&for /l %%i in (%[% 1 %]%) do (set txt=&set /p txt=&echo(!txt!)) &endlocal &exit /b
 
 :ChrEdgeFkOff_cmd:[
-@title ChrEdgeFkOff V7 & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
+@title ChrEdgeFkOff V7+ & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
 rem PoS Defender started screaming about the former vbs version, so now this window will flash briefly. V7: not anymore ;)
 call :reg_var "HKCU\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice" ProgID ProgID
 if /i "%ProgID%" equ "MSEdgeHTM" echo;Default browser is set to Edge! Change it or remove ChrEdgeFkOff script. & pause & exit /b
@@ -80,12 +80,13 @@ set "CLI=%CLI:*ie_to_edge_stub.exe`=%"
 set "CLI=%CLI:*msedge.exe`=%"
 set "URL=http%CLI:*http=%" & set "NOOP=%CLI:microsoft-edge=%" & set "PASSTROUGH=%ChrEdge:msedge=chredge%"
 if /i "%CLI%" equ "%NOOP%" if exist "%PASSTROUGH%" start "" "%PASSTROUGH%" %CLI:`="%
-if /i "%CLI%" equ "%NOOP%" exit /b
-set ".=%URL:!=}%"&setlocal enabledelayedexpansion& rem brute url percent decoding
-set ".=!.:%%={!" &set ".=!.:{3A=:!" &set ".=!.:{2F=/!" &set ".=!.:{3F=?!" &set ".=!.:{23=#!" &set ".=!.:{5B=[!" &set ".=!.:{5D=]!"
-set ".=!.:{40=@!"&set ".=!.:{21=}!" &set ".=!.:{24=$!" &set ".=!.:{26=&!" &set ".=!.:{27='!" &set ".=!.:{28=(!" &set ".=!.:{29=)!"
-set ".=!.:{2A=*!"&set ".=!.:{2B=+!" &set ".=!.:{2C=,!" &set ".=!.:{3B=;!" &set ".=!.:{3D==!" &set ".=!.:{25=%!" &set ".=!.:{20= !"
-endlocal& set "URL=%.:}=!%"
+if /i "%CLI%" equ "%NOOP%" (exit /b) else call :dec_url
+set "DIRECT=%URL:WS/redirect/=%"
+if /i "%URL%" equ "%DIRECT%" start "" "%Choice%" "%URL%" & exit /b
+set "REDIRECT=%URL:*&url=%"
+set "REDIRECT=%REDIRECT:~1%"
+set "REDIRECT="%REDIRECT:&=" %"
+set URL=& for %%. in (%REDIRECT%) do if not defined URL set "URL=%%~." & call :dec_url64
 start "" "%Choice%" "%URL%" & exit /b
 
 :reg_var [USAGE] call :reg_var "HKCU\Volatile Environment" value-or-"" variable [extra options]
@@ -93,6 +94,31 @@ set "reg_var=" & set reg_var/=/v %2& if %2=="" set reg_var/=/ve& rem AveYo, v2: 
 for /f "tokens=* delims=" %%V in ('reg query "%~1" %reg_var/% /z /se "," %4 %5 %6 %7 %8 %9 2^>nul') do set "reg_var=%%V"
 set "reg_var/=" & if %2=="" if defined reg_var set "reg_var=%reg_var:*)    =%"
 if not defined reg_var (set "%~3=" & exit /b) else set "%~3=%reg_var:*)    =%" & set reg_var=& exit /b
+
+:dec_url64 brute url 64 decoding by AveYo
+setlocal enabledelayedexpansion& pushd "%ProgramData%"& rem inspired by Aacini's string to hex and pizza's decode vbs
+set asc=& <nul set /p "=%URL%" >~h1.tmp& for %%. in (~h1.tmp) do fsutil file createnew ~h2.tmp %%~Z. >nul
+for /f "skip=1 tokens=2" %%. in ('fc /b ~h1.tmp ~h2.tmp') do set z=-1& set /a h=0x%%.& if !h! gtr 32 if !h! lss 127 (
+  (if !h! gtr 64 if !h! lss 92 set /a z=h-65) & (if !h! gtr 96 if !h! lss 124 set /a z=h-71)
+  (if !h! gtr 47 if !h! lss 59 set /a z=h +4) & (if !h! equ 45 set /a z=62) & (if !h! equ 95 set /a z=63)
+  set "asc=!asc! !z!"
+)
+set dec=&set /a o=0& set /a b=0& set /a i=0
+for %%c in (%asc%) do ( if %%c neq -1 ( if !o! equ 0 ( set /a i=%%c*4& set /a b=6 ) else ( if !o! equ 2 (
+  set /a i+=%%c   & set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a b=0 ) else ( if !o! equ 4 (
+  set /a i+=%%c/4 & set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a i=%%c*64& set /a b=2 ) else (
+  set /a i+=%%c/16& set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a i=%%c*16& set /a b=4 )))
+  set /a o=b
+))
+del /f /q ~h?.tmp >nul 2>nul& popd& endlocal& set "URL=%dec%"& exit /b
+
+:dec_url brute url percent decoding by AveYo
+set ".=%URL:!=}%"&setlocal enabledelayedexpansion& rem brute url percent decoding
+set ".=!.:%%={!" &set ".=!.:{3A=:!" &set ".=!.:{2F=/!" &set ".=!.:{3F=?!" &set ".=!.:{23=#!" &set ".=!.:{5B=[!" &set ".=!.:{5D=]!"
+set ".=!.:{40=@!"&set ".=!.:{21=}!" &set ".=!.:{24=$!" &set ".=!.:{26=&!" &set ".=!.:{27='!" &set ".=!.:{28=(!" &set ".=!.:{29=)!"
+set ".=!.:{2A=*!"&set ".=!.:{2B=+!" &set ".=!.:{2C=,!" &set ".=!.:{3B=;!" &set ".=!.:{3D==!" &set ".=!.:{25=%%!"&set ".=!.:{20= !"
+set ",=!.:%%=!" & if "!,!" neq "!.!" endlocal& set "URL=%.:}=!%" & call :dec_url
+endlocal& set "URL=%.:}=!%" & exit /b
 rem done
 
 :ChrEdgeFkOff_cmd:]
