@@ -99,7 +99,7 @@ set [=&for /f "delims=:" %%s in ('findstr /nbrc:":%~1:\[" /c:":%~1:\]" "%~f0"')d
 <"%~f0" ((for /l %%i in (0 1 %[%) do set /p =)&for /l %%i in (%[% 1 %]%) do (set txt=&set /p txt=&echo(!txt!)) &endlocal &exit /b
 
 :ChrEdgeFkOff_cmd:[
-@title ChrEdgeFkOff V7+ & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
+@title ChrEdgeFkOff V7++ & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
 rem PoS Defender started screaming about the former vbs version, so now this window will flash briefly. V7: not anymore ;)
 call :reg_var "HKCU\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice" ProgID ProgID
 if /i "%ProgID%" equ "MSEdgeHTM" echo;Default browser is set to Edge! Change it or remove ChrEdgeFkOff script. & pause & exit /b
@@ -129,22 +129,23 @@ for /f "tokens=* delims=" %%V in ('reg query "%~1" %reg_var/% /z /se "," %4 %5 %
 set "reg_var/=" & if %2=="" if defined reg_var set "reg_var=%reg_var:*)    =%"
 if not defined reg_var (set "%~3=" & exit /b) else set "%~3=%reg_var:*)    =%" & set reg_var=& exit /b
 
-:dec_url64 brute url 64 decoding by AveYo
+:dec_url64 brute url 64 decoding by AveYo - revised for speed
 setlocal enabledelayedexpansion& pushd "%ProgramData%"& rem inspired by Aacini's string to hex and pizza's decode vbs
 set asc=& <nul set /p "=%URL%" >~h1.tmp& for %%. in (~h1.tmp) do fsutil file createnew ~h2.tmp %%~Z. >nul
 for /f "skip=1 tokens=2" %%. in ('fc /b ~h1.tmp ~h2.tmp') do set z=-1& set /a h=0x%%.& if !h! gtr 32 if !h! lss 127 (
   (if !h! gtr 64 if !h! lss 92 set /a z=h-65) & (if !h! gtr 96 if !h! lss 124 set /a z=h-71)
-  (if !h! gtr 47 if !h! lss 59 set /a z=h +4) & (if !h! equ 45 set /a z=62) & (if !h! equ 95 set /a z=63)
-  set "asc=!asc! !z!"
-)
-set dec=&set /a o=0& set /a b=0& set /a i=0
-for %%c in (%asc%) do ( if %%c neq -1 ( if !o! equ 0 ( set /a i=%%c*4& set /a b=6 ) else ( if !o! equ 2 (
-  set /a i+=%%c   & set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a b=0 ) else ( if !o! equ 4 (
-  set /a i+=%%c/4 & set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a i=%%c*64& set /a b=2 ) else (
-  set /a i+=%%c/16& set /a x=i%%256& cmd /d /c exit /b !x!& set "dec=!dec!!=exitcodeAscii!"& set /a i=%%c*16& set /a b=4 )))
-  set /a o=b
-))
-del /f /q ~h?.tmp >nul 2>nul& popd& endlocal& set "URL=%dec%"& exit /b
+  (if !h! gtr 47 if !h! lss 59 set /a z=h +4) & (if !h! equ 45 set /a z=62) & (if !h! equ 95 set /a z=63) & set "asc=!asc! !z!" )
+set dec=&set URL=&set /a o=0& set /a b=0& set /a i=0& set hl=0123456789ABCDEF& set /a n=0& set ff=forfiles /m ChrEdgeFkOff.cmd /c
+for %%c in (%asc%) do ( if %%c neq -1 ( ( if !o! equ 0 ( set /a i=%%c*4& set /a b=6 ) else (
+  if !o! equ 2 ( set /a i+=%%c   & set /a x=i%%256& set /a H=!x!/16& set /a L=!x!%%16& set /a n+=4
+    call set H=%%hl:~!H!,1%%& call set L=%%hl:~!L!,1%%& set "dec=!dec!0x!h!!l!"& set /a b=0 ) else (
+  if !o! equ 4 ( set /a i+=%%c/4 & set /a x=i%%256& set /a H=!x!/16& set /a L=!x!%%16& set /a n+=4
+    call set H=%%hl:~!H!,1%%& call set L=%%hl:~!L!,1%%& set "dec=!dec!0x!h!!l!"& set /a i=%%c*64& set /a b=2 ) else (
+  set /a i+=%%c/16& set /a x=i%%256& set /a H=!x!/16& set /a L=!x!%%16& set /a n+=4
+    call set H=%%hl:~!H!,1%%& call set L=%%hl:~!L!,1%%& set "dec=!dec!0x!h!!l!"& set /a i=%%c*16& set /a b=4 ))) ) & set /a o=b )
+  if !n! gtr 224 for /f "tokens=* delims=" %%. in ('%ff% "cmd /d /c echo;!dec!"') do set "URL=!URL!%%." & set dec=& set /a n=0 )
+if defined dec for /f "tokens=* delims=" %%. in ('%ff% "cmd /d /c echo;!dec!"') do set "URL=!URL!%%."
+del /f /q ~h?.tmp >nul 2>nul& popd& endlocal& set "URL=%URL%"& exit /b
 
 :dec_url brute url percent decoding by AveYo
 set ".=%URL:!=}%"&setlocal enabledelayedexpansion& rem brute url percent decoding
