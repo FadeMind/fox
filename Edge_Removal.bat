@@ -1,7 +1,7 @@
 @(set "0=%~f0"^)#) & powershell -nop -c iex([io.file]::ReadAllText($env:0)) & exit/b
 #:: double-click to run or just copy-paste into powershell - it's a standalone hybrid script
 #::
-$_Paste_in_Powershell = { $host.ui.RawUI.WindowTitle = 'Edge Removal - AveYo, 2022.08.21'
+$_Paste_in_Powershell = { $host.ui.RawUI.WindowTitle = 'Edge Removal - AveYo, 2022.08.22'
 
 $also_remove_webview = 1
 
@@ -72,11 +72,14 @@ $ChrEdgeFkOff = @'
 set CLI=%*&(set IFEO=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options&set MSE=&set BHO=&set ProgID=)
 call :reg_var "HKCR\MSEdgeMHT\shell\open\command" "" ProgID
 for %%. in (%ProgID%) do if not defined MSE set "MSE=%%~."& set "MSEPath=%%~dp."
+set "PF=(x86)" & if "%PROCESSOR_ARCHITECTURE:~-2%" equ "86" if not defined PROCESSOR_ARCHITEW6432 set "PF="
+if not defined MSEPath call set "MSEPath=%%ProgramFiles%PF%%%\Microsoft\Edge\Application\"
+if not defined MSE set "MSE=%MSEPath%msedge.exe"
 
 :install
-if defined MSEPath for /f "delims=" %%W in ('dir /o:D /b /s "%MSEPath%\*ie_to_edge_stub.exe"') do set "BHO=%%~fW"
+if defined MSEPath for /f "delims=" %%W in ('dir /o:D /b /s "%MSEPath%*ie_to_edge_stub.exe" 2^>nul') do set "BHO=%%~fW"
 if not exist "%MSEPath%chredge.exe" if exist "%MSE%" mklink /h "%MSEPath%chredge.exe" "%MSE%" >nul
-if defined BHO copy /y "%BHO%" "%ProgramData%\" >nul 2>nul
+if defined BHO copy /y "%BHO%" "%ProgramData%\ie_to_edge_stub.exe" >nul 2>nul
 call :export ChrEdgeFkOff_cmd > "%ProgramData%\ChrEdgeFkOff.cmd"
 set "Headless_Console_by_AveYo=%systemroot%\system32\conhost.exe --headless" & rem still innovating
 reg add "HKCR\microsoft-edge" /f /ve /d URL:microsoft-edge >nul
@@ -99,7 +102,7 @@ set [=&for /f "delims=:" %%s in ('findstr /nbrc:":%~1:\[" /c:":%~1:\]" "%~f0"')d
 <"%~f0" ((for /l %%i in (0 1 %[%) do set /p =)&for /l %%i in (%[% 1 %]%) do (set txt=&set /p txt=&echo(!txt!)) &endlocal &exit /b
 
 :ChrEdgeFkOff_cmd:[
-@title ChrEdgeFkOff V7++ & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
+@title ChrEdgeFkOff V8 & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
 rem PoS Defender started screaming about the former vbs version, so now this window will flash briefly. V7: not anymore ;)
 call :reg_var "HKCU\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice" ProgID ProgID
 if /i "%ProgID%" equ "MSEdgeHTM" echo;Default browser is set to Edge! Change it or remove ChrEdgeFkOff script. & pause & exit /b
