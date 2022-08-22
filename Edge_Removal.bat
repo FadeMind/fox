@@ -111,7 +111,7 @@ set Choice=& for %%. in (%Browser%) do if not defined Choice set "Choice=%%~."
 call :reg_var "HKCR\MSEdgeMHT\shell\open\command" "" FallBack
 set ChrEdge=& for %%. in (%FallBack%) do if not defined ChrEdge set "ChrEdge=%%~."
 set "CLI=%CMDCMDLINE:"=`%"
-set "CLI=%CLI:~0,-1%"
+if "%CLI:~-1%"=="`" set "CLI=%CLI:~0,-1%"
 set "CLI=%CLI:*ChrEdgeFkOff.cmd`=%"
 set "CLI=%CLI:*ie_to_edge_stub.exe`=%"
 set "CLI=%CLI:*msedge.exe`=%"
@@ -155,7 +155,7 @@ set ".=%URL:!=}%"&setlocal enabledelayedexpansion& rem brute url percent decodin
 set ".=!.:%%={!" &set ".=!.:{3A=:!" &set ".=!.:{2F=/!" &set ".=!.:{3F=?!" &set ".=!.:{23=#!" &set ".=!.:{5B=[!" &set ".=!.:{5D=]!"
 set ".=!.:{40=@!"&set ".=!.:{21=}!" &set ".=!.:{24=$!" &set ".=!.:{26=&!" &set ".=!.:{27='!" &set ".=!.:{28=(!" &set ".=!.:{29=)!"
 set ".=!.:{2A=*!"&set ".=!.:{2B=+!" &set ".=!.:{2C=,!" &set ".=!.:{3B=;!" &set ".=!.:{3D==!" &set ".=!.:{25=%%!"&set ".=!.:{20= !"
-set ",=!.:%%=!" & if "!,!" neq "!.!" endlocal& set "URL=%.:}=!%" & call :dec_url
+rem set ",=!.:%%=!" & if "!,!" neq "!.!" endlocal& set "URL=%.:}=!%" & call :dec_url
 endlocal& set "URL=%.:}=!%" & exit /b
 rem done
 
