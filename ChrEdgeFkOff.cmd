@@ -1,11 +1,11 @@
 @(set '(=)||' <# lean and mean cmd / powershell hybrid #> @'
 
 ::# ChrEdgeFkOff - open desktop & start menu web search, widgets links or help in your chosen default browser - by AveYo
-::# v7 no more cmd flash ;) v6 PoS Defender started screaming about the former vbs version so went vbs-less as well; v5 fix
+::# v8 MSEPath fallback; v7 no more cmd flash ;) v6 PoS Defender screaming at the former version so went vbscript-less too
 ::# v4 innovative redirect even if Edge is uninstalled! v3 powershell-less active part; parse "install" or "remove" args
 ::# if Edge is already removed, try installing Edge Stable, then remove it via Edge_Removal.bat
 
-@echo off & title ChrEdgeFkOff || AveYo 2022.08.21
+@echo off & title ChrEdgeFkOff || AveYo 2022.08.22
 
 ::# elevate with native shell by AveYo
 >nul reg add hkcu\software\classes\.Admin\shell\runas\command /f /ve /d "cmd /x /d /r set \"f0=%%2\"& call \"%%2\" %%3"& set _= %*
@@ -19,13 +19,16 @@ set "<=pushd "%appdata%"&2>nul findstr /c:\ /a" &set ">=%>>%&echo;" &set "|=%|:~
 set CLI=%*&(set IFEO=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options&set MSE=&set BHO=&set ProgID=)
 call :reg_var "HKCR\MSEdgeMHT\shell\open\command" "" ProgID
 for %%. in (%ProgID%) do if not defined MSE set "MSE=%%~."& set "MSEPath=%%~dp."
+set "PF=(x86)" & if "%PROCESSOR_ARCHITECTURE:~-2%" equ "86" if not defined PROCESSOR_ARCHITEW6432 set "PF="
+if not defined MSEPath call set "MSEPath=%%ProgramFiles%PF%%%\Microsoft\Edge\Application\"
+if not defined MSE set "MSE=%MSEPath%msedge.exe"
 if /i "%CLI%"=="" reg query "%IFEO%\ie_to_edge_stub.exe\0" /v Debugger >nul 2>nul && goto remove || goto install
 if /i "%~1"=="install" (goto install) else if /i "%~1"=="remove" goto remove
 
 :install
-if defined MSEPath for /f "delims=" %%W in ('dir /o:D /b /s "%MSEPath%\*ie_to_edge_stub.exe"') do set "BHO=%%~fW"
+if defined MSEPath for /f "delims=" %%W in ('dir /o:D /b /s "%MSEPath%*ie_to_edge_stub.exe" 2^>nul') do set "BHO=%%~fW"
 if not exist "%MSEPath%chredge.exe" if exist "%MSE%" mklink /h "%MSEPath%chredge.exe" "%MSE%" >nul
-if defined BHO copy /y "%BHO%" "%ProgramData%\" >nul 2>nul
+if defined BHO copy /y "%BHO%" "%ProgramData%\ie_to_edge_stub.exe" >nul 2>nul
 call :export ChrEdgeFkOff_cmd > "%ProgramData%\ChrEdgeFkOff.cmd"
 set "Headless_Console_by_AveYo=%systemroot%\system32\conhost.exe --headless" & rem still innovating
 reg add "HKCR\microsoft-edge" /f /ve /d URL:microsoft-edge >nul
@@ -41,7 +44,7 @@ reg add "%IFEO%\msedge.exe" /f /v UseFilter /d 1 /t reg_dword >nul
 reg add "%IFEO%\msedge.exe\0" /f /v FilterFullPath /d "%MSE%" >nul
 reg add "%IFEO%\msedge.exe\0" /f /v Debugger /d "%Headless_Console_by_AveYo% \"%ProgramData%\ChrEdgeFkOff.cmd\"" >nul
 if "%CLI%" neq "" exit /b
-echo;& %<%:f0 " ChrEdgeFkOff V7++ "%>>% & %<%:2f " INSTALLED "%>>% & %<%:f0 " run again to remove "%>%
+echo;& %<%:f0 " ChrEdgeFkOff V8 "%>>% & %<%:2f " INSTALLED "%>>% & %<%:f0 " run again to remove "%>%
 timeout /t 7
 exit /b
 
@@ -55,7 +58,7 @@ reg add HKCR\MSEdgeHTM\shell\open\command /f /ve /d "\"%MSE%\" --single-argument
 reg delete "%IFEO%\ie_to_edge_stub.exe" /f >nul 2>nul
 reg delete "%IFEO%\msedge.exe" /f >nul 2>nul
 if "%CLI%" neq "" exit /b
-echo;& %<%:f0 " ChrEdgeFkOff V7++ "%>>% & %<%:df " REMOVED "%>>% & %<%:f0 " run again to install "%>%
+echo;& %<%:f0 " ChrEdgeFkOff V8 "%>>% & %<%:df " REMOVED "%>>% & %<%:f0 " run again to install "%>%
 timeout /t 7
 exit /b
 
@@ -65,7 +68,7 @@ set [=&for /f "delims=:" %%s in ('findstr /nbrc:":%~1:\[" /c:":%~1:\]" "%~f0"')d
 <"%~f0" ((for /l %%i in (0 1 %[%) do set /p =)&for /l %%i in (%[% 1 %]%) do (set txt=&set /p txt=&echo(!txt!)) &endlocal &exit /b
 
 :ChrEdgeFkOff_cmd:[
-@title ChrEdgeFkOff V7++ & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
+@title ChrEdgeFkOff V8 & echo off & set ?= open start menu web search, widgets links or help in your chosen browser - by AveYo
 rem PoS Defender started screaming about the former vbs version, so now this window will flash briefly. V7: not anymore ;)
 call :reg_var "HKCU\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice" ProgID ProgID
 if /i "%ProgID%" equ "MSEdgeHTM" echo;Default browser is set to Edge! Change it or remove ChrEdgeFkOff script. & pause & exit /b
